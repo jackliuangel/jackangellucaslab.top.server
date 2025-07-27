@@ -1,0 +1,22 @@
+[Unit]
+Description=Clean up old files in youtube download directory
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cleanup_old_files.sh
+User=root
+Group=root
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=60
+
+# 移除所有安全限制以避免 NAMESPACE 错误
+# NoNewPrivileges=true
+# PrivateTmp=false
+# ProtectSystem=false
+# ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target 
