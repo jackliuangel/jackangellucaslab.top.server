@@ -106,6 +106,8 @@ log "Format selector: $FORMAT_SELECTOR"
     --embed-metadata \
     --add-metadata \
     --no-progress \
+    --mark-watched \
+    --embed-thumbnail \
     -o "$DOWNLOAD_DIR/${TIMESTAMP}.%(ext)s" \
     "$URL" >> "$LOG_FILE" 2>&1
 
