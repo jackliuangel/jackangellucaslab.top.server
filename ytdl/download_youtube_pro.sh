@@ -43,8 +43,8 @@ if [ $# -eq 0 ]; then
     echo "  2 or 720p - Lower than 720p"
     echo "  3 or 1080p - Lower than 1080p"
     echo "  (no parameter) - Best available quality"
-    echo "Example: $0 https://www.youtube.com/watch?v=VIDEO_ID 720p"
-    echo "Example: $0 https://www.youtube.com/watch?v=VIDEO_ID 2"
+    echo "Example: $0 ttps://www.youtube.com/watch?v=Z99Njl3Fra0 720p"
+    echo "Example: $0 ttps://www.youtube.com/watch?v=Z99Njl3Fra0 2"
     URL="https://www.youtube.com/watch?v=Z99Njl3Fra0"
     QUALITY=""
 elif [ $# -eq 1 ]; then
@@ -94,6 +94,10 @@ fi
 
 log "Format selector: $FORMAT_SELECTOR"
 
+# Build sanitized URL for filename (remove scheme, replace non-alnum with '_', limit length)
+SANITIZED_URL=$(echo "$URL" | sed -E 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' | sed -E 's~[^A-Za-z0-9._-]~_~g' | cut -c1-120)
+log "Sanitized URL for filename: $SANITIZED_URL"
+
 # Execute download with subtitle options
     "$YTDLP_PATH" \
     --cookies "$COOKIES_FILE" \
@@ -105,10 +109,14 @@ log "Format selector: $FORMAT_SELECTOR"
     --embed-subs \
     --embed-metadata \
     --add-metadata \
+    --write-info-json \
+    --parse-metadata "title:(?P<meta_title>[^#]+)" \
+    --replace-in-metadata meta_title "\\s+$" "" \
+    --replace-in-metadata meta_title "\\s+" "" \
+    --ppa "FFmpegMetadata:-movflags use_metadata_tags -metadata comment=%(webpage_url)s " \
     --no-progress \
     --mark-watched \
-    --embed-thumbnail \
-    -o "$DOWNLOAD_DIR/${TIMESTAMP}.%(ext)s" \
+    -o "$DOWNLOAD_DIR/%(meta_title,title,id).120B_${TIMESTAMP}.%(ext)s" \
     "$URL" >> "$LOG_FILE" 2>&1
 
 # Capture exit code
@@ -120,8 +128,8 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
     log "SUCCESS: Download with subtitles completed"
     
     # Find the downloaded files
-    DOWNLOADED_VIDEO=$(find "$DOWNLOAD_DIR" -name "${TIMESTAMP}.*" -type f | grep -E '\.(mp4|mkv|avi)$' | head -1)
-    DOWNLOADED_SUBTITLES=$(find "$DOWNLOAD_DIR" -name "${TIMESTAMP}.*" -type f | grep -E '\.(srt|vtt)$')
+    DOWNLOADED_VIDEO=$(find "$DOWNLOAD_DIR" -name "*_${TIMESTAMP}.*" -type f | grep -E '\.(mp4|mkv|avi)$' | head -1)
+    DOWNLOADED_SUBTITLES=$(find "$DOWNLOAD_DIR" -name "*_${TIMESTAMP}.*" -type f | grep -E '\.(srt|vtt)$')
     
     if [ -n "$DOWNLOADED_VIDEO" ] && [ -f "$DOWNLOADED_VIDEO" ]; then
         # Extract video information and save in variables
@@ -145,7 +153,43 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
         log "Downloaded video: $FILE_NAME"
         log "Video size: $FILE_SIZE"
         log "Video path: $FILE_PATH"
+       
+
+
+
+
+        # Overwrite Title metadata with the video URL
+        if command -v ffmpeg >/dev/null 2>&1; then
+            RETAGGED_FILE="${FILE_PATH}.retagged"
+            log "Retagging title metadata with URL via ffmpeg..."
+            ffmpeg -v error -y -i "$FILE_PATH" -map 0 -c copy -movflags use_metadata_tags -metadata title="$URL" "$RETAGGED_FILE" >> "$LOG_FILE" 2>&1
+            if [ $? -eq 0 ] && [ -f "$RETAGGED_FILE" ]; then
+                mv -f "$RETAGGED_FILE" "$FILE_PATH"
+                FILE_SIZE=$(du -h "$FILE_PATH" | cut -f1)
+                log "Retagging done. Updated title to URL. New size: $FILE_SIZE"
+            else
+                log "ffmpeg retagging failed; trying exiftool if available"
+                rm -f "$RETAGGED_FILE"
+                if command -v exiftool >/dev/null 2>&1; then
+                    exiftool -overwrite_original -Title="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
+                else
+                    log "exiftool not available; skipping metadata overwrite"
+                fi
+            fi
+        else
+            if command -v exiftool >/dev/null 2>&1; then
+                log "ffmpeg not found; using exiftool to retag title with URL"
+                exiftool -overwrite_original -Title="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
+            else
+                log "Neither ffmpeg nor exiftool available; cannot overwrite title metadata"
+            fi
+        fi
         
+
+
+
+
+
         # Check for subtitles
         if [ -n "$DOWNLOADED_SUBTITLES" ]; then
             log "Subtitles found:"
@@ -182,9 +226,7 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
         
         # echo "http://47.128.3.198/files/$FILE_NAME"
 
-       # echo "{\"title\": \"$VIDEO_TITLE\", \"download_link\": $DOWNLOAD_HTTP_URL, \"VIDEO_SOURCE_URL\": \"$URL\"}"
         echo "{\"title\": \"$VIDEO_TITLE\", \"download_link\": \"$DOWNLOAD_HTTP_URL\", \"video_source_url\": \"$URL\"}"
-               
         exit 0
     else
         log "ERROR: Downloaded video file not found"
