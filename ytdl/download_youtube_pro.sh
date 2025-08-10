@@ -118,9 +118,9 @@ log "Format selector: $FORMAT_SELECTOR"
     --replace-in-metadata title '[/]+' "" \
     --replace-in-metadata title '[\\]+' "" \
     --replace-in-metadata title '[*]+' "" \
+    --replace-in-metadata title "[#]+" "" \
     --replace-in-metadata title "[\x00-\x1F]+" "" \
     --replace-in-metadata title "[\\u3001-\\u303F\\uFF01-\\uFF60\\uFFE0-\\uFFEE]+" "" \
-    --ppa "FFmpegMetadata:-movflags use_metadata_tags -metadata title=%(webpage_url)s  -metadata source=%(webpage_url)s" \
     --no-progress \
     --mark-watched \
     -o "$DOWNLOAD_DIR/%(title).120B_${TIMESTAMP}.%(ext)s" \
@@ -181,7 +181,7 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
                 log "ffmpeg retagging failed; trying exiftool if available"
                 rm -f "$RETAGGED_FILE"
                 if command -v exiftool >/dev/null 2>&1; then
-                    exiftool -overwrite_original -Title="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
+                    exiftool -overwrite_original -Artist="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
                 else
                     log "exiftool not available; skipping metadata overwrite"
                 fi
