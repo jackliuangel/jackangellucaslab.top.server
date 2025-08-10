@@ -98,7 +98,7 @@ log "Format selector: $FORMAT_SELECTOR"
 SANITIZED_URL=$(echo "$URL" | sed -E 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' | sed -E 's~[^A-Za-z0-9._-]~_~g' | cut -c1-120)
 log "Sanitized URL for filename: $SANITIZED_URL"
 
-# Execute download with subtitle options
+# Execute download with subtitle options;mark watched;replace title in meta info; keep title in downloading file name
     "$YTDLP_PATH" \
     --cookies "$COOKIES_FILE" \
     -f "$FORMAT_SELECTOR" \
@@ -109,15 +109,29 @@ log "Sanitized URL for filename: $SANITIZED_URL"
     --embed-subs \
     --embed-metadata \
     --add-metadata \
-    --write-info-json \
-    --parse-metadata "title:(?P<meta_title>[^#]+)" \
-    --replace-in-metadata meta_title "\\s+$" "" \
-    --replace-in-metadata meta_title "\\s+" "" \
-    --ppa "FFmpegMetadata:-movflags use_metadata_tags -metadata comment=%(webpage_url)s " \
+    --replace-in-metadata title "\\s+$" "" \
+    --replace-in-metadata title "\\s+" "_" \
+    --replace-in-metadata title "[,!，！]+" "" \
+    --replace-in-metadata title "[|｜]+" "" \
+    --replace-in-metadata title "[;]+" "" \
+    --replace-in-metadata title "[?]+" "" \
+    --replace-in-metadata title "[.]+" "" \
+    --replace-in-metadata title '[<>]+' "" \
+    --replace-in-metadata title '[:]+' "" \
+    --replace-in-metadata title '["]+' "" \
+    --replace-in-metadata title '[/]+' "" \
+    --replace-in-metadata title '[\\]+' "" \
+    --replace-in-metadata title '[*]+' "" \
+    --replace-in-metadata title "[\x00-\x1F]+" "" \
+    --replace-in-metadata title "[\\u3001-\\u303F\\uFF01-\\uFF60\\uFFE0-\\uFFEE]+" "" \
+    --ppa "FFmpegMetadata:-movflags use_metadata_tags -metadata title=%(webpage_url)s  -metadata source=%(webpage_url)s" \
     --no-progress \
     --mark-watched \
-    -o "$DOWNLOAD_DIR/%(meta_title,title,id).120B_${TIMESTAMP}.%(ext)s" \
+    -o "$DOWNLOAD_DIR/%(title).120B_${TIMESTAMP}.%(ext)s" \
     "$URL" >> "$LOG_FILE" 2>&1
+
+
+
 
 # Capture exit code
 DOWNLOAD_EXIT_CODE=$?
