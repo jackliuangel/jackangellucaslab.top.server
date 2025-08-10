@@ -94,10 +94,6 @@ fi
 
 log "Format selector: $FORMAT_SELECTOR"
 
-# Build sanitized URL for filename (remove scheme, replace non-alnum with '_', limit length)
-SANITIZED_URL=$(echo "$URL" | sed -E 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' | sed -E 's~[^A-Za-z0-9._-]~_~g' | cut -c1-120)
-log "Sanitized URL for filename: $SANITIZED_URL"
-
 # Execute download with subtitle options;mark watched;replace title in meta info; keep title in downloading file name
     "$YTDLP_PATH" \
     --cookies "$COOKIES_FILE" \
