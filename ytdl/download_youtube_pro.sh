@@ -16,18 +16,37 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 
+# Function to get quality label for filename
+get_quality_label() {
+    local quality="$1"
+    case "$quality" in
+        1|"360p")
+            echo "360p"
+            ;;
+        2|"720p")
+            echo "720p"
+            ;;
+        3|"1080p")
+            echo "1080p"
+            ;;
+        *)
+            echo "best"
+            ;;
+    esac
+}
+
 # Function to get format selector based on quality
 get_format_selector() {
     local quality="$1"
     case "$quality" in
-        1|"480p")
-            echo "b[ext=mp4][height<=480]/bv*[ext=mp4][height<=480]+ba[ext=m4a]/bv*[height<=480]+ba/b"
+        1|"360p")
+            echo "b[ext=mp4][height=360]/bv*[ext=mp4][height=360]+ba[ext=m4a]/bv*[height=360]+ba/b[height=360]/b"
             ;;
         2|"720p")
-            echo "b[ext=mp4][height<=720]/bv*[ext=mp4][height<=720]+ba[ext=m4a]/bv*[height<=720]+ba/b"
+            echo "b[ext=mp4][height=720]/bv*[ext=mp4][height=720]+ba[ext=m4a]/bv*[height=720]+ba/b[height=720]/b"
             ;;
         3|"1080p")
-            echo "b[ext=mp4][height<=1080]/bv*[ext=mp4][height<=1080]+ba[ext=m4a]/bv*[height<=1080]+ba/b"
+            echo "bv*[height=1080][ext=mp4]+ba[ext=m4a]/bv*[height=1080]+ba/b[height=1080]/b"
             ;;
         *)
             echo "b[ext=mp4]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b"
@@ -39,26 +58,27 @@ get_format_selector() {
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <YouTube_URL> [quality]"
     echo "Quality options:"
-    echo "  1 or 480p - Lower than 480p"
-    echo "  2 or 720p - Lower than 720p"
-    echo "  3 or 1080p - Lower than 1080p"
+    echo "  1 or 360p - Up to 360p quality (small file size)"
+    echo "  2 or 720p - Up to 720p quality (balanced)"
+    echo "  3 or 1080p - 1080p to best quality (high quality)"
     echo "  (no parameter) - Best available quality"
-    echo "Example: $0 ttps://www.youtube.com/watch?v=Z99Njl3Fra0 720p"
-    echo "Example: $0 ttps://www.youtube.com/watch?v=Z99Njl3Fra0 2"
+    echo "Example: $0 https://www.youtube.com/watch?v=Z99Njl3Fra0 720p"
+    echo "Example: $0 https://www.youtube.com/watch?v=Z99Njl3Fra0 2"
     URL="https://www.youtube.com/watch?v=Z99Njl3Fra0"
     QUALITY=""
 elif [ $# -eq 1 ]; then
     QUALITY=""
 fi
 
-# Get format selector based on quality
+# Get format selector and quality label based on quality
 FORMAT_SELECTOR=$(get_format_selector "$QUALITY")
+QUALITY_LABEL=$(get_quality_label "$QUALITY")
 
 
 # Log start
 log "=== DOWNLOAD STARTED ==="
 log "URL: $URL"
-log "Quality: ${QUALITY:-best}"
+log "Quality: ${QUALITY:-best} ($QUALITY_LABEL)"
 log "Timestamp: $TIMESTAMP"
 
 
@@ -83,10 +103,10 @@ log "Starting download with subtitles..."
 # Log quality setting
 if [ -n "$QUALITY" ]; then
     case "$QUALITY" in
-        1|"480p") log "Quality setting: Lower than 480p" ;;
-        2|"720p") log "Quality setting: Lower than 720p" ;;
-        3|"1080p") log "Quality setting: Lower than 1080p" ;;
-        *) log "Quality setting: Unknown quality '$QUALITY', using best available" ;;
+        1|"360p") log "Quality setting: Up to 360p quality (small file size) - Label: $QUALITY_LABEL" ;;
+        2|"720p") log "Quality setting: Up to 720p quality (balanced) - Label: $QUALITY_LABEL" ;;
+        3|"1080p") log "Quality setting: 1080p to best quality (high quality) - Label: $QUALITY_LABEL" ;;
+        *) log "Quality setting: Unknown quality '$QUALITY', using best available - Label: $QUALITY_LABEL" ;;
     esac
 else
     log "Quality setting: Best available quality"
@@ -94,7 +114,7 @@ fi
 
 log "Format selector: $FORMAT_SELECTOR"
 
-# Execute download with subtitle options;mark watched;replace title in meta info; keep title in downloading file name
+# Execute download with subtitle options
     "$YTDLP_PATH" \
     --cookies "$COOKIES_FILE" \
     -f "$FORMAT_SELECTOR" \
@@ -112,22 +132,20 @@ log "Format selector: $FORMAT_SELECTOR"
     --replace-in-metadata title "[;]+" "" \
     --replace-in-metadata title "[?]+" "" \
     --replace-in-metadata title "[.]+" "" \
+    --replace-in-metadata title "[#]+" "" \
     --replace-in-metadata title '[<>]+' "" \
     --replace-in-metadata title '[:]+' "" \
     --replace-in-metadata title '["]+' "" \
     --replace-in-metadata title '[/]+' "" \
     --replace-in-metadata title '[\\]+' "" \
     --replace-in-metadata title '[*]+' "" \
-    --replace-in-metadata title "[#]+" "" \
     --replace-in-metadata title "[\x00-\x1F]+" "" \
     --replace-in-metadata title "[\\u3001-\\u303F\\uFF01-\\uFF60\\uFFE0-\\uFFEE]+" "" \
+    --ppa "FFmpegMetadata:-movflags use_metadata_tags -metadata title=%(webpage_url)s  -metadata source=%(webpage_url)s" \
     --no-progress \
     --mark-watched \
-    -o "$DOWNLOAD_DIR/%(title).120B_${TIMESTAMP}.%(ext)s" \
+    -o "$DOWNLOAD_DIR/%(title).120B_${QUALITY_LABEL}_${TIMESTAMP}.%(ext)s" \
     "$URL" >> "$LOG_FILE" 2>&1
-
-
-
 
 # Capture exit code
 DOWNLOAD_EXIT_CODE=$?
@@ -138,8 +156,21 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
     log "SUCCESS: Download with subtitles completed"
     
     # Find the downloaded files
-    DOWNLOADED_VIDEO=$(find "$DOWNLOAD_DIR" -name "*_${TIMESTAMP}.*" -type f | grep -E '\.(mp4|mkv|avi)$' | head -1)
-    DOWNLOADED_SUBTITLES=$(find "$DOWNLOAD_DIR" -name "*_${TIMESTAMP}.*" -type f | grep -E '\.(srt|vtt)$')
+    log "Searching for downloaded files with quality: ${QUALITY_LABEL}, timestamp: ${TIMESTAMP}"
+    log "Search directory: $DOWNLOAD_DIR"
+    log "Search pattern: *_${QUALITY_LABEL}_${TIMESTAMP}.*"
+    
+    # List all files in download directory for debugging
+    log "All files in download directory:"
+    find "$DOWNLOAD_DIR" -type f -name "*${TIMESTAMP}*" | while read file; do
+        log "Found file: $file"
+    done
+    
+    DOWNLOADED_VIDEO=$(find "$DOWNLOAD_DIR" -name "*_${QUALITY_LABEL}_${TIMESTAMP}.*" -type f | grep -E '\.(mp4|mkv|avi)$' | head -1)
+    DOWNLOADED_SUBTITLES=$(find "$DOWNLOAD_DIR" -name "*_${QUALITY_LABEL}_${TIMESTAMP}.*" -type f | grep -E '\.(srt|vtt)$')
+    
+    log "Found video file: $DOWNLOADED_VIDEO"
+    log "Found subtitle files: $DOWNLOADED_SUBTITLES"
     
     if [ -n "$DOWNLOADED_VIDEO" ] && [ -f "$DOWNLOADED_VIDEO" ]; then
         # Extract video information and save in variables
@@ -160,13 +191,9 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
         FILE_NAME=$(basename "$DOWNLOADED_VIDEO")
         FILE_PATH="$DOWNLOADED_VIDEO"
         
-        log "Downloaded video: $FILE_NAME"
+        log "Downloaded video: $FILE_NAME (Quality: $QUALITY_LABEL)"
         log "Video size: $FILE_SIZE"
         log "Video path: $FILE_PATH"
-       
-
-
-
 
         # Overwrite Title metadata with the video URL
         if command -v ffmpeg >/dev/null 2>&1; then
@@ -181,7 +208,7 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
                 log "ffmpeg retagging failed; trying exiftool if available"
                 rm -f "$RETAGGED_FILE"
                 if command -v exiftool >/dev/null 2>&1; then
-                    exiftool -overwrite_original -Artist="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
+                    exiftool -overwrite_original -Title="$URL" "$FILE_PATH" >> "$LOG_FILE" 2>&1 && log "exiftool retagging succeeded"
                 else
                     log "exiftool not available; skipping metadata overwrite"
                 fi
@@ -195,11 +222,6 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
             fi
         fi
         
-
-
-
-
-
         # Check for subtitles
         if [ -n "$DOWNLOADED_SUBTITLES" ]; then
             log "Subtitles found:"
@@ -220,7 +242,7 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
         log "Size: $FILE_SIZE"
         log "Path: $FILE_PATH"
         log "Title: $VIDEO_TITLE"
-	log "DOWNLOAD HTTP URL: $DOWNLOAD_HTTP_URL"
+	    log "DOWNLOAD HTTP URL: $DOWNLOAD_HTTP_URL"
         log "SMB Path: //47.128.3.198/YoutubeDownload/$FILE_NAME"
         
         # List subtitle files if any
@@ -239,9 +261,36 @@ if [ $DOWNLOAD_EXIT_CODE -eq 0 ]; then
         echo "{\"title\": \"$VIDEO_TITLE\", \"download_link\": \"$DOWNLOAD_HTTP_URL\", \"video_source_url\": \"$URL\"}"
         exit 0
     else
-        log "ERROR: Downloaded video file not found"
-        echo "ERROR: Downloaded video file not found"
-        exit 1
+        log "ERROR: Downloaded video file not found with pattern *_${QUALITY_LABEL}_${TIMESTAMP}.*"
+        log "Trying alternative search patterns..."
+        
+        # Try broader search patterns
+        DOWNLOADED_VIDEO=$(find "$DOWNLOAD_DIR" -name "*${TIMESTAMP}*" -type f | grep -E '\.(mp4|mkv|avi|webm)$' | head -1)
+        
+        if [ -n "$DOWNLOADED_VIDEO" ] && [ -f "$DOWNLOADED_VIDEO" ]; then
+            log "Found video with broader search: $DOWNLOADED_VIDEO"
+            # Continue with the same processing logic
+            VIDEO_TITLE=$("$YTDLP_PATH"  --cookies "$COOKIES_FILE" --get-title "$URL" 2>/dev/null)
+            FILE_SIZE=$(du -h "$DOWNLOADED_VIDEO" | cut -f1)
+            FILE_NAME=$(basename "$DOWNLOADED_VIDEO")
+            FILE_PATH="$DOWNLOADED_VIDEO"
+            
+            log "Downloaded video: $FILE_NAME (Quality: $QUALITY_LABEL)"
+            log "Video size: $FILE_SIZE"
+            log "Video path: $FILE_PATH"
+            
+            DOWNLOAD_HTTP_URL="http://47.128.3.198/files/$FILE_NAME"
+            echo "{\"title\": \"$VIDEO_TITLE\", \"download_link\": \"$DOWNLOAD_HTTP_URL\", \"video_source_url\": \"$URL\"}"
+            exit 0
+        else
+            log "ERROR: Downloaded video file not found even with broader search"
+            log "All files in download directory:"
+            ls -la "$DOWNLOAD_DIR" | while read line; do
+                log "$line"
+            done
+            echo "ERROR: Downloaded video file not found"
+            exit 1
+        fi
     fi
 else
     log "=== DOWNLOAD WITH SUBTITLES FAILED ==="
