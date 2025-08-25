@@ -43,10 +43,10 @@ get_format_selector() {
             echo "b[ext=mp4][height=360]/bv*[ext=mp4][height=360]+ba[ext=m4a]/bv*[height=360]+ba/b[height=360]/b"
             ;;
         2|"720p")
-            echo "b[ext=mp4][height=720]/bv*[ext=mp4][height=720]+ba[ext=m4a]/bv*[height=720]+ba/b[height=720]/b"
+            echo "b[ext=mp4][height<=720]/bv*[ext=mp4][height<=720]+ba[ext=m4a]/bv*[height<=720]+ba/b[height<=720]/b"
             ;;
         3|"1080p")
-            echo "bv*[height=1080][ext=mp4]+ba[ext=m4a]/bv*[height=1080]+ba/b[height=1080]/b"
+            echo "bv*[vcodec^=avc1][height<=1080]+ba[acodec^=mp4a]/bv*[vcodec^=avc1][height<=1080]+ba[acodec^=mp4a]/b[ext=mp4][height<=1080]"
             ;;
         *)
             echo "b[ext=mp4]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b"
