@@ -4,7 +4,7 @@
 # Used for cleaning temporary download files
 
 # Configuration variables
-TARGET_DIR="/tmp/youtube_download/congliulyc@gmail.com"
+TARGET_DIR="/tmp/video_download/congliulyc@gmail.com"
 LOG_FILE="/var/log/cleanup_old_files.log"
 MAX_AGE_HOURS=1
 SLEEP_HOURS=1  # Execute every 2 hours
