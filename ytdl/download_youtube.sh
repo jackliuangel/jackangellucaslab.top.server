@@ -3,8 +3,8 @@
 
 # Configuration
 URL="$1"
-COOKIES_FILE="/home/ubuntu/ytdl/cookies.txt"
-DOWNLOAD_DIR="/tmp/youtube_download/congliulyc@gmail.com"
+COOKIES_FILE="/home/ubuntu/ytdl/cookies-youtube.txt"
+DOWNLOAD_DIR="/tmp/video_download/congliulyc@gmail.com"
 LOG_FILE="/tmp/youtube_download/youtube_download.log"
 
 # Generate timestamp for filename
