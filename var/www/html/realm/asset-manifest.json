@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/realm/static/css/main.adceb751.css",
+    "main.js": "/realm/static/js/main.d6ae57a6.js",
+    "index.html": "/realm/index.html",
+    "main.adceb751.css.map": "/realm/static/css/main.adceb751.css.map",
+    "main.d6ae57a6.js.map": "/realm/static/js/main.d6ae57a6.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.adceb751.css",
+    "static/js/main.d6ae57a6.js"
+  ]
+}
