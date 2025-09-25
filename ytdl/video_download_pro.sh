@@ -176,7 +176,7 @@ download_youtube() {
     log "URL: $URL"
     log "Quality: ${QUALITY:-best} ($(get_quality_label "$QUALITY"))"
     log "Format selector: $FORMAT_SELECTOR"
-    
+    log "download dir: $DOWNLOAD_DIR"    
     # Execute download
     "$YTDLP_PATH" \
         --cookies "$COOKIES_FILE" \
@@ -207,7 +207,9 @@ download_youtube() {
         --no-progress \
         --mark-watched \
         -o "$DOWNLOAD_DIR/%(title).120B_$(get_quality_label "$QUALITY")_${TIMESTAMP}.%(ext)s" \
-        "$URL" >> "$LOG_FILE" 2>&1
+	"$URL" >> "$LOG_FILE" 2>&1
+    log "=== YOUTUBE DOWNLOAD DONE" 
+
 }
 
 # Function to download Bilibili video
@@ -297,6 +299,7 @@ download_bilibili() {
             -o "$DOWNLOAD_DIR/%(title).120B_$(get_quality_label "$QUALITY")_${TIMESTAMP}.%(ext)s" \
             "$URL" 2>&1 | tee -a "$LOG_FILE"
     fi
+    log "=== BILIBILI DOWNLOAD DONE===" 
 }
 
 # Function to process download results
