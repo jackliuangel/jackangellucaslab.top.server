@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/realm/static/css/main.adceb751.css",
-    "main.js": "/realm/static/js/main.d6ae57a6.js",
+    "main.css": "/realm/static/css/main.418f4508.css",
+    "main.js": "/realm/static/js/main.e15f55f8.js",
     "index.html": "/realm/index.html",
-    "main.adceb751.css.map": "/realm/static/css/main.adceb751.css.map",
-    "main.d6ae57a6.js.map": "/realm/static/js/main.d6ae57a6.js.map"
+    "main.418f4508.css.map": "/realm/static/css/main.418f4508.css.map",
+    "main.e15f55f8.js.map": "/realm/static/js/main.e15f55f8.js.map"
   },
   "entrypoints": [
-    "static/css/main.adceb751.css",
-    "static/js/main.d6ae57a6.js"
+    "static/css/main.418f4508.css",
+    "static/js/main.e15f55f8.js"
   ]
 }
