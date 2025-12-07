@@ -1,4 +1,4 @@
-# jackangellucaslab.top.server
+# jackangellucaslabs.top.server
 ## server to host vless, nginx, react app and ssh and more
 
 
