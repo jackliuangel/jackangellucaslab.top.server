@@ -1,4 +1,4 @@
-# jackangellucaslabs.top.server
+# jackangellucaslab.top.server
 ## server to host vless, nginx, react app and ssh and more
 
 
@@ -11,6 +11,7 @@ Text tutorial
 https://bulianglin.com/archives/nicenamebak.html
 
 key code:
+`bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/956bf85bbac978d56c0e319c5fac2d6db7df9564/install.sh) `
 `bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/956bf85bbac978d56c0e319c5fac2d6db7df9564/install.sh) `
 
 
@@ -44,7 +45,7 @@ Nginx services :
 - **学习资源**: B站 - 技术蛋老师
 
 
-### chores， todo-like dashboard
+### chores， x, todo-like dashboard
 - **技术栈**: React Native + Expo
 - **参考项目**: React Native Todo
 - **学习资源**: YouTube - freeCodeCamp
@@ -57,6 +58,15 @@ Nginx services :
 
 
 
+# How to setup nginx server and deploy a new app *foobar*：
+- 1. 在cloudflare创建新的DNS
+- 2. 在nginx server， 生成https key。 命令是
+   `sudo certbot certonly --nginx -d foobar.jackangellucaslabs.top`
+- 3. 在nginx server, 把打包好的dist目录， 放到 `/var/www/html/foobar-root`
+- 4. 在nginx server,把  `/etc/nginx/sites-available` ， 准备好配置文件 `/var/www/html/foobar-subdomain`, 他其实是指向到
+   `/home/ubuntu/jackangellucaslabs.top.server/etc/nginx/sites-available/foobar-subdomain`
+- 5. 在nginx server, `/etc/nginx/sites-enabled`目录下，创建soft link `foobar-subdomain` 到 `/var/www/html/foobar-subdomain`
+- 6. `sudo systemctl restart nginx`
 # How to setup nginx server and deploy a new app *foobar*：
 - 1. 在cloudflare创建新的DNS
 - 2. 在nginx server， 生成https key。 命令是
